@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Billfold: invoices that get paid</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
+<style>
+:root{--bg:#e9eef5;--card:#fff;--ink:#1b2a41;--mute:#5d6b82;--line:#d3dbe7;--acc:#2450e0;--accink:#fff;--pro:#f2a93b;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121a28;--card:#1b2536;--ink:#e8eef8;--mute:#93a1ba;--line:#2c3a52;--acc:#6f92ff;--accink:#0d1526}}
+:root[data-theme="dark"]{--bg:#121a28;--card:#1b2536;--ink:#e8eef8;--mute:#93a1ba;--line:#2c3a52;--acc:#6f92ff;--accink:#0d1526}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Bricolage Grotesque',system-ui,-apple-system,'Segoe UI',sans-serif;line-height:1.45}
+main{max-width:1000px;margin:0 auto;padding:16px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+h1{font-size:1.6rem;font-weight:800;margin:0;letter-spacing:-.02em}
+.plan{font-size:.85rem;color:var(--mute);text-align:right}
+.plan b{color:var(--ink)}
+.grid{display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:800px){.grid{grid-template-columns:1fr 1fr;align-items:start}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+label{display:block;font-size:.8rem;color:var(--mute);margin:10px 0 4px}
+input{width:100%;font:inherit;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:8px;padding:9px 10px}
+input:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.row{display:grid;grid-template-columns:1fr 56px 78px 32px;gap:6px;margin-top:6px}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink);padding:9px 12px}
+.pri{background:var(--acc);color:var(--accink);border-color:var(--acc);font-weight:600;width:100%;margin-top:14px;padding:12px}
+.ghost{width:100%;margin-top:8px;color:var(--mute)}
+.inv h2{margin:0 0 2px;font-size:1.2rem}
+.inv .meta{color:var(--mute);font-size:.85rem;margin-bottom:12px}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+td,th{padding:7px 0;border-bottom:1px solid var(--line);text-align:left}
+td:last-child,th:last-child{text-align:right}
+.tot td{border:0;padding:4px 0}
+.tot .big td{font-weight:800;font-size:1.2rem;padding-top:8px}
+.mark{margin-top:14px;font-size:.75rem;color:var(--mute);border-top:1px dashed var(--line);padding-top:8px}
+.modal{position:fixed;inset:0;background:rgba(10,16,28,.6);display:none;align-items:center;justify-content:center;padding:16px;z-index:9}
+.modal.on{display:flex}
+.modal .card{max-width:380px;width:100%}
+.modal h3{margin:0 0 6px;font-size:1.3rem}
+.modal ul{padding-left:18px;margin:10px 0;color:var(--mute)}
+.price{font-size:2rem;font-weight:800}
+.price small{font-size:.9rem;font-weight:400;color:var(--mute)}
+.pro-btn{background:var(--pro);color:#2a1a00;border-color:var(--pro)}
+.toast{color:var(--acc);font-size:.85rem;margin-top:8px;min-height:1.2em}
+#hist{margin-top:14px}.hr{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:.9rem}.hr span{flex:1 1 140px}.hr button{padding:5px 9px;font-size:.8rem}
+#rem{width:100%;margin-top:10px;font:inherit;font-size:.9rem;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px}
+.pay{display:inline-block;margin-top:12px;color:var(--acc);font-weight:600}
+@media print{#hist,#rem{display:none}header,.form,.toast{display:none}.grid{display:block}body{background:#fff}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Billfold</h1>
+  <div class="plan"><div id="plan"></div><button id="acct" type="button" style="margin-top:6px;padding:5px 10px;font-size:.8rem">Log in</button> <button id="manage" type="button" hidden style="margin-top:6px;padding:5px 10px;font-size:.8rem">Manage plan</button></div>
+</header>
+<div class="card" id="vnote" hidden style="margin-bottom:14px">Confirm your email to unlock Pro. We sent you a link. <button id="vbtn" type="button" style="padding:5px 10px;font-size:.85rem">Resend link</button></div>
+<div class="grid">
+  <section class="card form">
+    <label for="from">Your name or business</label>
+    <input id="from" value="Maya Ortiz Design">
+    <label for="to">Client</label>
+    <input id="to" value="Northwind Cafe">
+    <label for="num">Invoice number</label>
+    <input id="num" value="INV-0042">
+    <label>Line items (description, qty, rate)</label>
+    <div id="items"></div>
+    <button class="ghost" id="add" type="button">Add line item</button>
+    <label for="tax">Tax %</label>
+    <input id="tax" type="number" value="8" min="0" max="100" step="0.5">
+    <label for="pay">Payment link (optional, e.g. a Stripe Payment Link)</label>
+    <input id="pay" placeholder="https://buy.stripe.com/...">
+    <button class="pri" id="fin" type="button">Finish and save PDF</button>
+    <div class="toast" id="toast"></div>
+  </section>
+  <section class="card inv" id="inv"></section>
+</div>
+<section class="card" id="hist"></section>
+<textarea id="rem" rows="7" hidden readonly aria-label="Drafted reminder"></textarea>
+</main>
+
+<div class="modal" id="wall" role="dialog" aria-modal="true" aria-labelledby="wt">
+  <div class="card">
+    <h3 id="wt">You've used your 3 free invoices</h3>
+    <div class="price">$9<small> / month</small></div>
+    <ul>
+      <li>Unlimited invoices</li>
+      <li>No Billfold mark on your PDFs</li>
+      <li>Ready-to-send reminders for late payers</li>
+    </ul>
+    <button class="pri pro-btn" id="buy" type="button">Start Pro</button>
+    <button class="ghost" id="later" type="button">Not now</button>
+  </div>
+</div>
+
+<div class="modal" id="auth" role="dialog" aria-modal="true" aria-labelledby="at"><div class="card">
+<h3 id="at">Log in</h3>
+<label for="em">Email</label><input id="em" type="email" autocomplete="email">
+<label for="pw">Password (8 or more characters)</label><input id="pw" type="password" autocomplete="current-password">
+<div class="toast" id="aerr" role="alert"></div>
+<button class="pri" id="ago" type="button">Log in</button>
+<button class="ghost" id="forgot" type="button">Forgot password?</button>
+<button class="ghost" id="aswap" type="button">New here? Create an account</button>
+<button class="ghost" id="aclose" type="button">Cancel</button>
+</div></div>
+
+<script>
+var FREE=3,S={pro:false,used:0,month:'',inv:[]};
+var items=[{d:'Logo and menu design',q:1,r:1200},{d:'Revision round',q:2,r:150}];
+var mk=new Date().toISOString().slice(0,7);
+try{var raw=localStorage.getItem('billfold');if(raw){S=JSON.parse(raw)}}catch(e){}
+if(!S.inv)S.inv=[];
+S.pro=false; // Pro comes from the server only
+if(S.month!==mk){S.month=mk;S.used=0}
+var U=null,pt,mode='login',pend=false,RT='',V=true;
+function push(){clearTimeout(pt);pt=setTimeout(function(){fetch('/api/inv',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({inv:S.inv})}).catch(function(){})},400)}
+function save(){try{localStorage.setItem('billfold',JSON.stringify(S))}catch(e){}if(U){push()}}
+function $(i){return document.getElementById(i)}
+function money(n){return '$'+n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',')}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function rows(){
+  $('items').innerHTML=items.map(function(it,i){
+    return '<div class="row"><input aria-label="Description" data-i="'+i+'" data-k="d" value="'+esc(it.d)+'">'+
+    '<input aria-label="Quantity" type="number" min="0" data-i="'+i+'" data-k="q" value="'+it.q+'">'+
+    '<input aria-label="Rate" type="number" min="0" data-i="'+i+'" data-k="r" value="'+it.r+'">'+
+    '<button type="button" aria-label="Remove line" data-x="'+i+'">×</button></div>'}).join('');
+}
+function used(){return S.inv.filter(function(v){return new Date(+v.t||0).toISOString().slice(0,7)===mk}).length}
+function tot(){var s=0;items.forEach(function(it){s+=(+it.q||0)*(+it.r||0)});return s*(1+(+$('tax').value||0)/100)}
+function hist(){
+  var o=0;S.inv.forEach(function(v){if(!v.p)o+=v.a});
+  $('hist').innerHTML=S.inv.length?'<h2 style="margin:0 0 8px;font-size:1.1rem">Saved invoices: '+money(o)+' outstanding</h2>'+S.inv.map(function(v,i){return '<div class="hr"><span>'+esc(v.n)+' for '+esc(v.c)+'</span><b>'+money(v.a)+'</b><button data-p="'+i+'">'+(v.p?'Paid':'Mark paid')+'</button>'+(v.p?'':'<button data-r="'+i+'">Draft reminder</button>')+'</div>'}).join(''):'<div class="meta">Finished invoices appear here so you can track who has paid.</div>';
+}
+function remind(v){
+  if(!S.pro){$('wall').classList.add('on');return}
+  var d=Math.max(1,Math.round((Date.now()-v.t)/864e5)),pl=$('pay').value.trim(),ok=/^https:\/\//.test(pl);
+  var t=d<7?['Friendly reminder: invoice '+v.n,'I hope you are well. This is a friendly reminder that invoice '+v.n+' for '+money(v.a)+' is still open.']:
+    d<30?['Payment due: invoice '+v.n,'Invoice '+v.n+' for '+money(v.a)+' was sent '+d+' days ago and is still unpaid. Please arrange payment this week.']:
+    ['Overdue: invoice '+v.n+' ('+d+' days)','Invoice '+v.n+' for '+money(v.a)+' is now '+d+' days overdue. Please pay within 5 business days, or reply with a date you can commit to.'];
+  var r=$('rem');r.hidden=false;
+  r.value='Subject: '+t[0]+'\n\nHi '+v.c+',\n\n'+t[1]+(ok?'\n\nYou can pay online here: '+pl:'')+'\n\nIf you have already paid, thank you, and please ignore this note.\n\nBest,\n'+$('from').value;
+}
+$('hist').addEventListener('click',function(e){var d=e.target.dataset;
+  if(d.p!==undefined){S.inv[d.p].p=S.inv[d.p].p?0:1;save();hist()}
+  if(d.r!==undefined){remind(S.inv[d.r])}});
+function draw(){
+  var sub=0;items.forEach(function(it){sub+=(+it.q||0)*(+it.r||0)});
+  var t=(+$('tax').value||0)/100*sub;
+  var body=items.map(function(it){return '<tr><td>'+esc(it.d||'Item')+'</td><td>'+(+it.q||0)+' × '+money(+it.r||0)+'</td><td>'+money((+it.q||0)*(+it.r||0))+'</td></tr>'}).join('');
+  $('inv').innerHTML='<h2>Invoice '+esc($('num').value)+'</h2><div class="meta">From '+esc($('from').value)+' to '+esc($('to').value)+'</div>'+
+  '<table><tr><th>Item</th><th>Qty × rate</th><th>Total</th></tr>'+body+'</table>'+
+  '<table class="tot"><tr><td>Subtotal</td><td>'+money(sub)+'</td></tr><tr><td>Tax</td><td>'+money(t)+'</td></tr><tr class="big"><td>Amount due</td><td>'+money(sub+t)+'</td></tr></table>'+
+  (/^https:\/\//.test($('pay').value.trim())?'<a class="pay" target="_blank" rel="noopener" href="'+esc($('pay').value.trim())+'">Pay online</a>':'')+(S.pro?'':'<div class="mark">Made with Billfold. Upgrade to Pro to remove this line.</div>');
+  var left=Math.max(0,FREE-used());
+  $('plan').innerHTML=S.pro?'<b>Pro</b> plan':'<b>Free</b>: '+left+' of '+FREE+' invoices left this month';
+}
+$('items').addEventListener('input',function(e){var i=e.target.dataset.i;if(i!==undefined){items[i][e.target.dataset.k]=e.target.value;draw()}});
+$('items').addEventListener('click',function(e){var x=e.target.dataset.x;if(x!==undefined&&items.length>1){items.splice(x,1);rows();draw()}});
+$('add').onclick=function(){items.push({d:'',q:1,r:0});rows();draw()};
+['from','to','num','tax','pay'].forEach(function(id){$(id).addEventListener('input',draw)});
+$('fin').onclick=function(){
+  if(!S.pro&&used()>=FREE){$('wall').classList.add('on');return}
+  S.inv.unshift({n:$('num').value,c:$('to').value,a:tot(),p:0,t:Date.now()});
+  save();draw();hist();$('toast').textContent='Invoice '+$('num').value+' finished. Choose Save as PDF in the print window.';
+  try{window.print()}catch(e){}
+};
+function acctUI(){$('acct').textContent=U?'Log out ('+U+')':'Log in';$('vnote').hidden=!(U&&!V);$('manage').hidden=!(U&&S.pro)}
+function amode(m){mode=m;var t={login:['Log in','Log in'],signup:['Create account','Create account'],reset:['Choose a new password','Save password']}[m];
+  $('at').textContent=t[0];$('ago').textContent=t[1];$('aerr').textContent='';
+  $('aswap').textContent=m==='login'?'New here? Create an account':'Have an account? Log in';
+  $('aswap').hidden=m==='reset';$('forgot').hidden=m!=='login';
+  $('pw').autocomplete=m==='login'?'current-password':'new-password'}
+async function sync(){
+  var m=await (await fetch('/api/me')).json();
+  if(!m.email){U=null;S.pro=false}
+  else{U=m.email;S.pro=!!m.pro;V=m.verified!==false;var seen={};m.inv.forEach(function(v){seen[v.t]=1});
+    S.inv=m.inv.concat(S.inv.filter(function(v){return !seen[v.t]})).sort(function(a,b){return b.t-a.t});push()}
+  save();draw();hist();acctUI()}
+async function checkout(){
+  if(!U){pend=true;$('wall').classList.remove('on');amode('signup');$('auth').classList.add('on');return}
+  try{var r=await fetch('/api/checkout',{method:'POST'});var j=await r.json();if(!j.url){$('toast').textContent=j.error||'Checkout is unavailable. Try again.';$('wall').classList.remove('on');window.scrollTo(0,0);return}location.href=j.url}
+  catch(e){$('toast').textContent='Checkout is unavailable. Try again.';$('wall').classList.remove('on')}}
+$('buy').onclick=checkout;
+$('manage').onclick=async function(){try{var r=await fetch('/api/portal',{method:'POST'});var j=await r.json();if(j.url){location.href=j.url}else{$('toast').textContent=j.error||'Could not open billing.'}}catch(e){$('toast').textContent='Could not open billing.'}};
+$('vbtn').onclick=async function(){try{await fetch('/api/resend',{method:'POST'});$('vbtn').textContent='Link sent'}catch(e){}};
+$('acct').onclick=async function(){
+  if(U){try{await fetch('/api/logout',{method:'POST'})}catch(e){}U=null;S.pro=false;S.inv=[];save();draw();hist();acctUI()}
+  else{amode('login');$('auth').classList.add('on')}};
+$('aswap').onclick=function(){amode(mode==='login'?'signup':'login')};
+$('aclose').onclick=function(){$('auth').classList.remove('on');pend=false};
+$('ago').onclick=async function(){
+  var b={email:$('em').value,password:$('pw').value};if(mode==='reset')b.token=RT;
+  try{var r=await fetch('/api/'+mode,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
+    var j=await r.json();if(!r.ok){$('aerr').textContent=j.error||'Something went wrong.';return}
+    RT='';$('auth').classList.remove('on');$('pw').value='';await sync();if(pend){pend=false;checkout()}}
+  catch(e){$('aerr').textContent='Could not reach the server.'}};
+$('forgot').onclick=async function(){
+  try{var r=await fetch('/api/forgot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('em').value})});
+    var j=await r.json();$('aerr').textContent=r.ok?'If that email has an account, a reset link is on its way.':(j.error||'Something went wrong.')}
+  catch(e){$('aerr').textContent='Could not reach the server.'}};
+(async function(){try{
+  var sp=new URLSearchParams(location.search),q=sp.get('session_id');
+  if(sp.get('reset')){RT=sp.get('reset');$('em').value=sp.get('e')||'';amode('reset');$('auth').classList.add('on');history.replaceState(null,'','/app.html')}
+  if(sp.get('verify')){try{await fetch('/api/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:sp.get('e'),token:sp.get('verify')})})}catch(e){}history.replaceState(null,'','/app.html')}
+  await sync();
+  if(q&&U){var c=await fetch('/api/claim?session_id='+encodeURIComponent(q));if(c.ok){S.pro=true}history.replaceState(null,'','/app.html');save();draw()}
+}catch(e){}})();
+$('later').onclick=function(){$('wall').classList.remove('on')};
+rows();draw();hist();
+</script>
+</body>
+</html>
