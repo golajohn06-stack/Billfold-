@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Billfold - Smart Wallet</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui}
+body{background:#0f0f0f;color:#fff;padding:20px}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}
+.logo{font-weight:900;font-size:24px;letter-spacing:-1px}
+.logo span{color:#a3ff12}
+.card{background:linear-gradient(135deg,#a3ff12,#5ee7b7);color:#000;padding:22px;border-radius:20px;margin-bottom:20px}
+.card h3{opacity:.6;font-size:14px}
+.card h1{font-size:36px;margin:8px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.box{background:#1c1c1c;padding:18px;border-radius:16px}
+.box p{color:#888;font-size:13px}
+.box h2{margin-top:6px}
+.list{background:#1c1c1c;border-radius:16px;padding:16px}
+.item{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #2a2a2a}
+.item:last-child{border:0}
+.btn{width:100%;background:#a3ff12;color:#000;border:0;padding:16px;border-radius:14px;font-weight:800;margin-top:20px;font-size:16px}
+input{background:#1c1c1c;border:1px solid #2a2a2a;color:#fff;padding:14px;border-radius:12px;width:100%;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="header"><div class="logo">BILLFOLD<span>.</span></div><div>☰</div></div>
+<div class="card"><h3>Total Balance</h3><h1 id="bal">$2,450.00</h1><p>↑ 12% from last month</p></div>
+<div class="grid"><div class="box"><p>Income</p><h2 style="color:#a3ff12">+$3,200</h2></div><div class="box"><p>Spent</p><h2 style="color:#ff6b6b">-$750</h2></div></div>
+<div class="list"><div style="display:flex;justify-content:space-between;margin-bottom:12px"><strong>Recent Bills</strong><span style="color:#a3ff12">View all</span></div><div id="bills"><div class="item"><span>⚡ Electricity</span><span>-$45</span></div><div class="item"><span>📶 Internet</span><span>-$60</span></div><div class="item"><span>🏠 Rent</span><span>-$500</span></div></div><input id="name" placeholder="Bill name e.g. Netflix"><input id="amt" type="number" placeholder="Amount e.g. 15"><button class="btn" onclick="addBill()">+ Add Bill</button></div>
+<script>
+let total=2450;
+function addBill(){
+ let n=document.getElementById('name').value;
+ let a=parseFloat(document.getElementById('amt').value);
+ if(!n||!a)return alert('Enter name and amount');
+ let div=document.createElement('div');div.className='item';div.innerHTML=`<span>🧾 ${n}</span><span>-$${a}</span>`;
+ document.getElementById('bills').appendChild(div);
+ total-=a;document.getElementById('bal').innerText='$'+total.toFixed(2);
+ document.getElementById('name').value='';document.getElementById('amt').value='';
+}
+</script>
+</body>
+</html>
