@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Billfold - Smart Wallet</title>
+<title>Billfold - Smart Wallet</title><link rel="manifest" href="manifest.json">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui}
 body{background:#0f0f0f;color:#fff;padding:20px}
@@ -40,6 +40,6 @@ function addBill(){
  total-=a;document.getElementById('bal').innerText='$'+total.toFixed(2);
  document.getElementById('name').value='';document.getElementById('amt').value='';
 }
-</script>
+</script><script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js')}</script>
 </body>
 </html>
